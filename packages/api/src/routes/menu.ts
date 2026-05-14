@@ -1,13 +1,21 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
+import { menuData } from '../data/menu';
 
 const router = Router();
 
-// Placeholder for getting the menu
-router.get('/', (req, res) => {
-  res.json({
-    categories: [],
-    items: []
-  });
+router.get('/', (req: Request, res: Response) => {
+  try {
+    // Return the full menu dataset in a structured JSON response
+    res.json({
+      success: true,
+      data: menuData
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve menu data.'
+    });
+  }
 });
 
 export default router;
