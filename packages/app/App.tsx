@@ -3,9 +3,14 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { UIManager, Platform } from 'react-native';
 import { MenuScreen } from './src/screens/MenuScreen';
 import { CartScreen } from './src/screens/CartScreen';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
