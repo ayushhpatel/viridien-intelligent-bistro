@@ -5,7 +5,7 @@ import { MenuItem } from '../types';
 // Usually for Expo Go on a physical device, this needs to be your network IP
 // e.g. 'http://192.168.1.100:3001/api'
 export const apiClient = axios.create({
-  baseURL: 'https://f63e75465fca6e.lhr.life/api',
+  baseURL: 'https://e11e9447b95941.lhr.life/api',
 });
 
 export interface MenuResponse {
