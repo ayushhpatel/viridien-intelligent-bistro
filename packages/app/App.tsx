@@ -1,12 +1,45 @@
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Text, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MenuScreen } from './src/screens/MenuScreen';
+import { CartScreen } from './src/screens/CartScreen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+const Stack = createNativeStackNavigator();
+const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-xl font-bold text-blue-600">The Intelligent Bistro</Text>
-      <Text className="text-gray-500 mt-2">Expo setup is working!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <NavigationContainer>
+          <Stack.Navigator 
+            initialRouteName="Menu"
+            screenOptions={{
+              headerStyle: { backgroundColor: '#ffffff' },
+              headerShadowVisible: false,
+              headerTitleStyle: { fontWeight: 'bold' },
+            }}
+          >
+            <Stack.Screen 
+              name="Menu" 
+              component={MenuScreen} 
+              options={{ title: 'The Intelligent Bistro' }}
+            />
+            <Stack.Screen 
+              name="Cart" 
+              component={CartScreen} 
+              options={{ 
+                presentation: 'modal',
+                title: 'Your Cart'
+              }}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+        <StatusBar style="auto" />
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }
