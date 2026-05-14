@@ -1,0 +1,14 @@
+{
+  "name": "intelligent-bistro",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run api & npm run app",
+    "dev:tunnel": "npm run api & npm run tunnel --workspace=app",
+    "app": "npm run start --workspace=app",
+    "api": "npm run dev --workspace=api"
+  }
+}
