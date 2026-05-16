@@ -1,7 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { useCartStore } from '../store/useCartStore';
+import { fetchMenu } from '../services/api';
 import { sendChatMessage } from '../services/chat';
+import { MenuItem } from '../types';
 
 interface Message {
   id: string;
@@ -22,6 +25,17 @@ export const ChatInterface: React.FC<Props> = ({ onClose }) => {
   const scrollViewRef = useRef<ScrollView>(null);
   
   const { items, addItem, removeItem, updateQuantity, clearCart } = useCartStore();
+  const { data: menuItems = [] } = useQuery({
+    queryKey: ['menu'],
+    queryFn: fetchMenu,
+  });
+
+  const menuItemById = useMemo(() => {
+    return menuItems.reduce<Record<string, MenuItem>>((lookup, item) => {
+      lookup[item.id] = item;
+      return lookup;
+    }, {});
+  }, [menuItems]);
 
   useEffect(() => {
     // Auto-scroll to bottom whenever messages change
@@ -47,29 +61,89 @@ export const ChatInterface: React.FC<Props> = ({ onClose }) => {
         content: response.reply 
       }]);
 
+      const skippedActionMessages: string[] = [];
+      const appliedCartItemIds = new Set(items.map(item => item.id));
+
+      const addSkippedActionMessage = (message: string) => {
+        if (!skippedActionMessages.includes(message)) {
+          skippedActionMessages.push(message);
+        }
+      };
+
       response.actions.forEach(action => {
         switch (action.type) {
-          case 'ADD_ITEM':
-            const menuItem = { 
-              id: action.itemId!, 
-              name: action.itemId!.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-              price: 10.99, // Fallback price
-              description: '',
-              category: 'Added via AI',
-            };
-            addItem(menuItem, action.quantity || 1);
+          case 'ADD_ITEM': {
+            if (!action.itemId) {
+              addSkippedActionMessage("I couldn't add that item because the menu item was missing from the assistant response.");
+              break;
+            }
+
+            const menuItem = menuItemById[action.itemId];
+            if (!menuItem) {
+              addSkippedActionMessage(`I couldn't add "${action.itemId}" because it is not on the current menu.`);
+              break;
+            }
+
+            addItem(menuItem, action.quantity ?? 1);
+            appliedCartItemIds.add(action.itemId);
             break;
-          case 'REMOVE_ITEM':
-            if (action.itemId) removeItem(action.itemId);
+          }
+          case 'REMOVE_ITEM': {
+            if (!action.itemId) {
+              addSkippedActionMessage("I couldn't remove that item because the menu item was missing from the assistant response.");
+              break;
+            }
+
+            if (!menuItemById[action.itemId]) {
+              addSkippedActionMessage(`I couldn't remove "${action.itemId}" because it is not on the current menu.`);
+              break;
+            }
+
+            if (!appliedCartItemIds.has(action.itemId)) {
+              addSkippedActionMessage(`I couldn't remove "${menuItemById[action.itemId].name}" because it is not in your cart.`);
+              break;
+            }
+
+            removeItem(action.itemId);
+            appliedCartItemIds.delete(action.itemId);
             break;
-          case 'UPDATE_QUANTITY':
-            if (action.itemId && action.quantity) updateQuantity(action.itemId, action.quantity);
+          }
+          case 'UPDATE_QUANTITY': {
+            if (!action.itemId || !action.quantity) {
+              addSkippedActionMessage("I couldn't update that item because the assistant response was missing item or quantity details.");
+              break;
+            }
+
+            if (!menuItemById[action.itemId]) {
+              addSkippedActionMessage(`I couldn't update "${action.itemId}" because it is not on the current menu.`);
+              break;
+            }
+
+            if (!appliedCartItemIds.has(action.itemId)) {
+              addSkippedActionMessage(`I couldn't update "${menuItemById[action.itemId].name}" because it is not in your cart.`);
+              break;
+            }
+
+            updateQuantity(action.itemId, action.quantity);
             break;
+          }
           case 'CLEAR_CART':
             clearCart();
+            appliedCartItemIds.clear();
             break;
         }
       });
+
+      if (skippedActionMessages.length > 0) {
+        setMessages(prev => [
+          ...prev,
+          ...skippedActionMessages.map((message, index) => ({
+            id: `${Date.now()}-skipped-${index}`,
+            role: 'assistant' as const,
+            content: message
+          }))
+        ]);
+      }
 
     } catch (error) {
       setMessages(prev => [...prev, { 
