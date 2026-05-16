@@ -1,11 +1,29 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
+import { z } from 'zod';
 import { MenuItem } from '../types';
 
-// Depending on the environment, localhost might need to be an IP address
-// Usually for Expo Go on a physical device, this needs to be your network IP
-// e.g. 'http://192.168.1.100:3001/api'
+const MenuItemSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string(),
+  price: z.number().nonnegative(),
+  category: z.enum(['Burgers & Sandwiches', 'Sides', 'Drinks', 'Desserts']),
+  imageUrl: z.string(),
+});
+
+const MenuResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.array(MenuItemSchema),
+});
+
+const localApiUrl = Platform.select({
+  android: 'http://10.0.2.2:3001/api',
+  default: 'http://localhost:3001/api',
+});
+
 export const apiClient = axios.create({
-  baseURL: 'https://92e2924830dc47.lhr.life/api',
+  baseURL: process.env.EXPO_PUBLIC_API_URL || localApiUrl,
 });
 
 export interface MenuResponse {
@@ -14,9 +32,12 @@ export interface MenuResponse {
 }
 
 export const fetchMenu = async (): Promise<MenuItem[]> => {
-  const response = await apiClient.get<MenuResponse>('/menu');
-  if (!response.data.success) {
+  const response = await apiClient.get<unknown>('/menu');
+  const parsedResponse = MenuResponseSchema.safeParse(response.data);
+
+  if (!parsedResponse.success) {
     throw new Error('Failed to fetch menu');
   }
-  return response.data.data;
+
+  return parsedResponse.data.data;
 };

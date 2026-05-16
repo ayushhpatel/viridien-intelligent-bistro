@@ -1,20 +1,45 @@
 import { apiClient } from './api';
+import { z } from 'zod';
+import { CartItem } from '../types';
 
-export interface AIAction {
-  type: 'ADD_ITEM' | 'REMOVE_ITEM' | 'UPDATE_QUANTITY' | 'CLEAR_CART';
-  itemId?: string;
-  quantity?: number;
-}
+const AIActionSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('ADD_ITEM'),
+    itemId: z.string().min(1),
+    quantity: z.number().int().positive().default(1),
+  }),
+  z.object({
+    type: z.literal('REMOVE_ITEM'),
+    itemId: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal('UPDATE_QUANTITY'),
+    itemId: z.string().min(1),
+    quantity: z.number().int().positive(),
+  }),
+  z.object({
+    type: z.literal('CLEAR_CART'),
+  }),
+]);
 
-export interface ChatResponse {
-  reply: string;
-  actions: AIAction[];
-}
+const ChatResponseSchema = z.object({
+  reply: z.string().min(1),
+  actions: z.array(AIActionSchema),
+});
 
-export const sendChatMessage = async (message: string, currentCart: any[]): Promise<ChatResponse> => {
-  const response = await apiClient.post<ChatResponse>('/chat', {
+export type AIAction = z.infer<typeof AIActionSchema>;
+export type ChatResponse = z.infer<typeof ChatResponseSchema>;
+
+export const sendChatMessage = async (message: string, currentCart: CartItem[]): Promise<ChatResponse> => {
+  const response = await apiClient.post<unknown>('/chat', {
     message,
     currentCart
   });
-  return response.data;
+
+  const parsedResponse = ChatResponseSchema.safeParse(response.data);
+  if (!parsedResponse.success) {
+    throw new Error('Invalid chat response');
+  }
+
+  return parsedResponse.data;
 };

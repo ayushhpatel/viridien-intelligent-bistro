@@ -8,7 +8,7 @@ interface Props {
   onRemove: (id: string) => void;
 }
 
-export const CartItemRow: React.FC<Props> = ({ item, onUpdateQuantity, onRemove }) => {
+export const CartItemRow: React.FC<Props> = React.memo(({ item, onUpdateQuantity, onRemove }) => {
   return (
     <View className="bg-white rounded-3xl p-4 mb-4 flex-row items-center shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-gray-100">
       <View className="flex-1 pr-4">
@@ -35,4 +35,4 @@ export const CartItemRow: React.FC<Props> = ({ item, onUpdateQuantity, onRemove 
       </View>
     </View>
   );
-};
+});
