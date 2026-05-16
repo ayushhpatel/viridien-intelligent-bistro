@@ -1,120 +1,186 @@
-# The Intelligent Bistro 🍽️✨
+# The Intelligent Bistro
 
-The Intelligent Bistro is a modern, full-stack, AI-powered restaurant ordering application. It combines a premium mobile-first user experience with an advanced natural language processing backend, allowing users to build and modify their carts conversationally.
+The Intelligent Bistro is a full-stack, AI-powered restaurant ordering app built with React Native Expo and a Node.js API. Users can browse a polished mobile menu, manage a cart, and use a conversational assistant to add, remove, update, or clear items through structured AI actions.
 
----
+The project is designed as a recruiter-ready engineering showcase: clean mobile UX, deterministic cart state, validated AI output, and a small production-minded API boundary.
 
-## 📸 Screenshots & Demo
+## Screenshots And Demo
 
-*(Placeholder for Loom Demo Link - e.g., [Watch the 5-Minute Technical Walkthrough here](https://loom.com/))*
+| Menu | AI Ordering | Cart |
+| --- | --- | --- |
+| Add menu screenshot | Add chat screenshot | Add cart screenshot |
 
-| Menu Browsing | Conversational Ordering | Cart Checkout |
-|:---:|:---:|:---:|
-| *(Add screenshot of MenuScreen here)* | *(Add screenshot of ChatInterface here)* | *(Add screenshot of CartScreen here)* |
+Demo links:
+- Loom walkthrough: add link here
+- GitHub repository: add link here
 
----
+## Feature Highlights
 
-## 🚀 Key Features
+- Mobile menu browsing with loading, error, empty, and retry states
+- Zustand cart state with deterministic quantity and total calculations
+- AI chat assistant for natural-language ordering
+- OpenAI SDK integration with OpenAI or Gemini-compatible endpoints
+- Zod validation for AI responses, chat requests, and frontend API responses
+- Safe AI-to-cart execution that resolves item IDs against real menu data
+- Expo + NativeWind styling for a polished mobile-first interface
+- Lightweight Jest coverage for cart and AI validation behavior
 
-1. **AI Conversational Ordering**: Users can type complex requests like "Add 2 spicy chicken sandwiches, but remove one if it's over $20", and the backend orchestrates deterministic cart mutations.
-2. **Premium Fluid UX**: Features a fully custom design system using TailwindCSS, glassmorphism elements, native layout animations, and robust safe-area handling.
-3. **Optimized State Management**: Powered by Zustand for zero-boilerplate, high-performance local state, and React Query for reliable remote data synchronization.
-4. **Resilient Architecture**: Robust error handling, strict TypeScript boundaries, and Zod-validated data parsing ensure the application never crashes from unexpected input.
-
----
-
-## 🧠 Architecture Summary
-
-The application is structured as a modern Monorepo using npm workspaces, separating the mobile client from the Node.js API.
-
-### Tech Stack
-- **Frontend**: React Native, Expo, NativeWind (Tailwind CSS), Zustand, TanStack Query.
-- **Backend**: Node.js, Express, TypeScript, Zod, Google Gemini AI (via OpenAI SDK compatibility).
-- **Tooling**: Jest for unit testing, ESLint/Prettier for formatting.
-
-### AI Architecture
-To achieve reliable natural language ordering without hallucinated cart mutations:
-1. **Context Injection**: The client sends the user's message *alongside* the current cart state to the Node.js backend.
-2. **System Prompting**: The backend injects a strict system prompt instructing the LLM to act as a structured parser, returning ONLY a specific JSON schema.
-3. **Validation Boundary**: The LLM's response is caught by `Zod`. If the JSON is malformed or hallucinates unallowed actions, it fails gracefully.
-4. **Deterministic Execution**: The validated structured actions (`ADD_ITEM`, `UPDATE_QUANTITY`, `REMOVE_ITEM`) are returned to the client and deterministically executed against the Zustand store.
-
----
-
-## 📂 Folder Structure
+## Architecture
 
 ```text
 intelligent-bistro/
 ├── packages/
-│   ├── api/                  # Express.js Backend
-│   │   ├── src/
-│   │   │   ├── data/         # Mock database/menu items
-│   │   │   ├── prompts/      # LLM System Prompts
-│   │   │   ├── routes/       # API endpoints (/menu, /chat)
-│   │   │   ├── services/     # AI parsing logic
-│   │   │   └── validators/   # Zod Schemas
-│   └── app/                  # React Native Mobile App
-│       ├── src/
-│       │   ├── components/   # Reusable UI (CartItemRow, ChatInterface)
-│       │   ├── screens/      # Main Views (Menu, Cart)
-│       │   ├── services/     # API Clients (Axios)
-│       │   └── store/        # Zustand state
-└── package.json              # Monorepo configuration
+│   ├── api/
+│   │   ├── src/data/          # Menu source of truth
+│   │   ├── src/prompts/       # AI system prompt generation
+│   │   ├── src/routes/        # Express routes for menu and chat
+│   │   ├── src/services/ai/   # OpenAI-compatible parser
+│   │   └── src/validators/    # Zod request/response schemas
+│   └── app/
+│       ├── src/components/    # Menu, cart, and chat UI
+│       ├── src/screens/       # Menu and cart screens
+│       ├── src/services/      # Axios API clients and response validation
+│       ├── src/store/         # Zustand cart store
+│       └── src/types/         # Shared frontend types
+├── package.json               # npm workspace scripts
+└── README.md
 ```
 
----
+## AI Orchestration
 
-## 🛠️ Setup Instructions
+The assistant is intentionally not allowed to mutate cart state directly.
 
-### 1. Prerequisites
-- Node.js (v18+)
-- Expo Go app on your physical device (or iOS Simulator / Android Emulator)
+1. The frontend sends the user message plus current cart state to `/api/chat`.
+2. The backend validates the request with Zod.
+3. The backend builds a system prompt with the real menu IDs and current cart context.
+4. The LLM must return strict JSON actions such as `ADD_ITEM`, `REMOVE_ITEM`, `UPDATE_QUANTITY`, or `CLEAR_CART`.
+5. The backend validates the AI response with Zod.
+6. The frontend validates the HTTP response again.
+7. The chat UI resolves every AI `itemId` against the real menu data before touching the Zustand cart.
 
-### 2. Installation
-Clone the repository and install dependencies from the root:
+This keeps AI behavior useful while preventing hallucinated menu items from corrupting cart totals or item metadata.
+
+## Tech Stack
+
+- React Native Expo
+- TypeScript
+- NativeWind
+- Zustand
+- TanStack React Query
+- Node.js
+- Express
+- Zod
+- OpenAI SDK
+- Jest
+
+## Setup
+
+Install dependencies from the repository root:
+
 ```bash
 npm install
 ```
 
-### 3. Environment Configuration
-Navigate to `packages/api/` and copy the example environment file:
+Create backend environment variables:
+
 ```bash
-cd packages/api
-cp .env.example .env
-```
-Add your **Gemini API Key** to the `.env` file.
-
-### 4. Running the Project Locally
-From the root directory, start both the backend and frontend simultaneously:
-```bash
-npm run dev
-```
-- The API will start on `http://localhost:3001`
-- Expo will start and display a QR code. Scan it with the Expo Go app to launch the mobile client!
-
-*Note: If you are testing on a physical device and experience connection issues to the local backend, you can run `npm run dev:tunnel` to expose the frontend via Ngrok.*
-
----
-
-## 🧪 Testing
-The project features lightweight unit testing to verify critical AI parsing boundaries and cart logic correctness.
-```bash
-# Test the backend AI parsing logic
-npm run test --workspace=api
-
-# Test the frontend Cart reducers
-npm run test --workspace=app
+cp packages/api/.env.example packages/api/.env
 ```
 
----
+Use OpenAI:
 
-## 🔮 Future Improvements
+```bash
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_MODEL=gpt-4o-mini
+```
 
-If this prototype were to be scaled to a production environment, the following enhancements would be prioritized:
-1. **Persistent Database**: Migrate from in-memory arrays to a Postgres/Prisma setup for menu and order persistence.
-2. **Authentication**: Implement JWT or NextAuth to allow users to save their order history and favorite meals.
-3. **Payment Integration**: Hook the final cart screen up to the Stripe React Native SDK for real transactions.
-4. **CI/CD Pipeline**: Add GitHub Actions to automate the Jest test suite and deploy the API to a service like Render or Neon.
+Or use Gemini through its OpenAI-compatible endpoint:
 
----
-*Developed as an advanced engineering showcase.*
+```bash
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_MODEL=gemini-1.5-flash
+GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/openai/
+```
+
+Run the API:
+
+```bash
+npm run api
+```
+
+Run the Expo app in a second terminal:
+
+```bash
+npm run app
+```
+
+For iOS simulator, the app defaults to:
+
+```text
+http://localhost:3001/api
+```
+
+For Android emulator, the app defaults to:
+
+```text
+http://10.0.2.2:3001/api
+```
+
+For a physical device, start Expo with your Mac's LAN IP:
+
+```bash
+EXPO_PUBLIC_API_URL=http://YOUR_MAC_IP:3001/api npm run app
+```
+
+## Verification
+
+Run all tests:
+
+```bash
+npm test
+```
+
+Run TypeScript checks:
+
+```bash
+npm run typecheck
+```
+
+Manual QA flows:
+
+- Open the menu and confirm items, images, categories, prices, and retry behavior.
+- Add an item manually and verify cart count and total.
+- Ask the assistant: `Add 2 spicy chicken sandwiches`.
+- Ask the assistant: `Add dragon pizza` and verify the cart does not mutate.
+- Ask the assistant to remove or update an item that is not in the cart and verify a graceful message.
+- Clear the cart from chat and confirm the empty cart state.
+- Turn off the API and confirm the menu/chat fail gracefully.
+
+## Technical Decisions
+
+- Zustand is used for cart state because cart mutations are local, synchronous, and small.
+- React Query is used for menu fetching to get loading, error, retry, and cache behavior with minimal code.
+- AI actions are treated as untrusted input until both backend and frontend validation pass.
+- The real menu record is the only source of truth for cart item metadata.
+- The backend keeps the menu in local static data for demo simplicity; the boundary is ready for a database later.
+
+## Loom Demo Guide
+
+Suggested 5-minute structure:
+
+1. Product overview: show menu browsing and the cart.
+2. AI demo: add valid items through chat.
+3. Safety demo: ask for an unavailable item and show that the cart stays correct.
+4. Architecture: explain frontend, backend, AI parser, Zod validation, and Zustand.
+5. Engineering polish: mention tests, typechecks, env setup, and failure handling.
+
+Do not spend time on dependency installation, Expo QR details, or reading every file. Keep the focus on the user experience and the AI safety boundary.
+
+## Future Improvements
+
+- Persist menus and orders in Postgres with Prisma.
+- Add user accounts and order history.
+- Add checkout/payment integration.
+- Add E2E tests for the core ordering journey.
+- Add observability for AI failures and invalid action attempts.
+- Deploy the API and configure production environment variables.

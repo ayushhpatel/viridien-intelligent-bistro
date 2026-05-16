@@ -1,4 +1,4 @@
-import { AIResponseSchema } from '../validators/ai';
+import { AIResponseSchema, ChatRequestSchema } from '../validators/ai';
 
 describe('AI Zod Parser Validation', () => {
   it('should successfully parse a valid AI response', () => {
@@ -46,5 +46,37 @@ describe('AI Zod Parser Validation', () => {
     const result = AIResponseSchema.parse(validPayload);
     expect(result.actions[0].type).toBe("CLEAR_CART");
     expect(result.actions[0].itemId).toBeUndefined();
+  });
+
+  it('should reject add actions without a menu item ID', () => {
+    const invalidPayload = {
+      reply: "Adding that now.",
+      actions: [
+        {
+          type: "ADD_ITEM",
+          quantity: 1
+        }
+      ]
+    };
+
+    expect(() => AIResponseSchema.parse(invalidPayload)).toThrow();
+  });
+
+  it('should validate chat requests with optional cart state', () => {
+    const validPayload = {
+      message: "Add fries",
+      currentCart: [
+        {
+          id: "bistro_burger",
+          name: "The Bistro Burger",
+          quantity: 1,
+          price: 14.5
+        }
+      ]
+    };
+
+    const result = ChatRequestSchema.parse(validPayload);
+    expect(result.message).toBe("Add fries");
+    expect(result.currentCart).toHaveLength(1);
   });
 });

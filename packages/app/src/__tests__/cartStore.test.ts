@@ -44,4 +44,11 @@ describe('Cart Store Logic', () => {
     
     expect(useCartStore.getState().items).toHaveLength(0);
   });
+
+  it('should remove an item when quantity is updated to zero', () => {
+    useCartStore.getState().addItem(mockMenuItem, 1);
+    useCartStore.getState().updateQuantity('bistro_burger', 0);
+
+    expect(useCartStore.getState().items).toHaveLength(0);
+  });
 });

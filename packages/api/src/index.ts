@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'express';
+import cors from 'cors';
 import dotenv from 'dotenv';
 import menuRoutes from './routes/menu';
 import chatRoutes from './routes/chat';
@@ -10,8 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-const corsMiddleware = require('cors');
-app.use(corsMiddleware());
+app.use(cors());
 app.use(express.json());
 
 // Routes

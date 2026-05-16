@@ -6,6 +6,7 @@ build
 coverage
 .DS_Store
 npm-debug.log*
+tunnel_url.txt
 packages/app/.expo
 packages/app/node_modules
 packages/api/node_modules
