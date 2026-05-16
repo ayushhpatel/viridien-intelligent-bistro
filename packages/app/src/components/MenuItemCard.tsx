@@ -7,7 +7,7 @@ interface Props {
   onAdd: (item: MenuItem) => void;
 }
 
-export const MenuItemCard: React.FC<Props> = ({ item, onAdd }) => {
+export const MenuItemCard: React.FC<Props> = React.memo(({ item, onAdd }) => {
   return (
     <TouchableOpacity 
       activeOpacity={0.8}
@@ -38,4 +38,4 @@ export const MenuItemCard: React.FC<Props> = ({ item, onAdd }) => {
       </View>
     </TouchableOpacity>
   );
-};
+});

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { fetchMenu } from '../services/api';
@@ -28,7 +28,7 @@ const MenuSkeleton = () => (
 );
 
 export const MenuScreen = ({ navigation }: any) => {
-  const { data: menuItems, isLoading, isError } = useQuery({
+  const { data: menuItems, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ['menu'],
     queryFn: fetchMenu,
   });
@@ -36,6 +36,11 @@ export const MenuScreen = ({ navigation }: any) => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const addItem = useCartStore(state => state.addItem);
   const cartCount = useCartStore(state => state.getCartCount());
+  const cartTotal = useCartStore(state => state.items.reduce((total, item) => total + (item.price * item.quantity), 0));
+
+  const handleAddItem = useCallback((selectedItem: MenuItem) => {
+    addItem(selectedItem);
+  }, [addItem]);
 
   const groupedMenu = useMemo(() => {
     if (!menuItems) return {};
@@ -55,7 +60,14 @@ export const MenuScreen = ({ navigation }: any) => {
       <View className="flex-1 items-center justify-center bg-gray-50 px-6">
         <Text className="text-4xl mb-4">🍽️</Text>
         <Text className="text-xl font-bold text-gray-900 mb-2">Menu Unavailable</Text>
-        <Text className="text-gray-500 text-center">We couldn't connect to the kitchen. Please check your connection and try again.</Text>
+        <Text className="text-gray-500 text-center mb-6">We couldn't connect to the kitchen. Please check your connection and try again.</Text>
+        <TouchableOpacity
+          className="bg-black px-6 py-3 rounded-2xl"
+          onPress={() => refetch()}
+          disabled={isFetching}
+        >
+          <Text className="text-white font-bold">{isFetching ? 'Retrying...' : 'Retry'}</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -71,7 +83,7 @@ export const MenuScreen = ({ navigation }: any) => {
                 <MenuItemCard 
                   key={item.id} 
                   item={item} 
-                  onAdd={(selectedItem) => addItem(selectedItem)} 
+                  onAdd={handleAddItem} 
                 />
               ))}
             </View>
@@ -90,7 +102,7 @@ export const MenuScreen = ({ navigation }: any) => {
                 <Text className="text-white font-bold">{cartCount}</Text>
               </View>
               <Text className="text-white font-bold text-lg tracking-tight">View Cart</Text>
-              <Text className="text-white font-bold">${useCartStore.getState().getCartTotal().toFixed(2)}</Text>
+              <Text className="text-white font-bold">${cartTotal.toFixed(2)}</Text>
             </TouchableOpacity>
           </View>
         )}

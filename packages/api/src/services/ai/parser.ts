@@ -1,26 +1,32 @@
 import OpenAI from 'openai';
 import { generateSystemPrompt } from '../../prompts/system';
-import { AIResponse, AIResponseSchema } from '../../validators/ai';
+import { AIResponseSchema } from '../../validators/ai';
+import type { AIResponse, ChatCartItem } from '../../validators/ai';
 
-export const parseChatRequest = async (message: string, currentCart: any[]): Promise<AIResponse> => {
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn("WARNING: OPENAI_API_KEY is not set. Returning mocked AI response.");
+export const parseChatRequest = async (message: string, currentCart: ChatCartItem[]): Promise<AIResponse> => {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
+  const apiUrl = process.env.GEMINI_API_URL || process.env.OPENAI_API_URL;
+  const model = process.env.GEMINI_API_MODEL
+    || process.env.OPENAI_API_MODEL
+    || (process.env.GEMINI_API_KEY ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+
+  if (!apiKey) {
     return {
-      reply: "I am currently running in mock mode because no OpenAI API key was provided. I cannot process your request.",
+      reply: "I am currently running in mock mode because no AI API key was provided. I cannot process your request.",
       actions: []
     };
   }
 
   const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_API_URL ? process.env.OPENAI_API_URL.replace(/\/chat\/completions\/?$/, '/') : undefined
+    apiKey,
+    baseURL: apiUrl ? apiUrl.replace(/\/chat\/completions\/?$/, '/') : undefined
   });
 
   try {
     const systemPrompt = generateSystemPrompt(currentCart);
 
     const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_API_MODEL || 'gpt-4o-mini',
+      model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
@@ -35,7 +41,7 @@ export const parseChatRequest = async (message: string, currentCart: any[]): Pro
       throw new Error("Failed to parse AI response");
     }
 
-    const parsedJson = JSON.parse(rawContent);
+    const parsedJson: unknown = JSON.parse(rawContent);
 
     return AIResponseSchema.parse(parsedJson);
   } catch (error) {

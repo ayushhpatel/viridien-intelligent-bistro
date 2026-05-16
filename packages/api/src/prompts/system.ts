@@ -1,6 +1,7 @@
 import { menuData } from '../data/menu';
+import type { ChatCartItem } from '../validators/ai';
 
-export const generateSystemPrompt = (currentCart: any[]) => {
+export const generateSystemPrompt = (currentCart: ChatCartItem[]) => {
   const menuContext = menuData.map(
     item => `- ID: "${item.id}" | Name: "${item.name}" | Price: $${item.price} | Category: ${item.category}`
   ).join('\n');

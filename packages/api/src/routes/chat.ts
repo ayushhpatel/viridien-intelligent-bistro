@@ -1,23 +1,24 @@
 import { Router, Request, Response } from 'express';
 import { parseChatRequest } from '../services/ai/parser';
+import { ChatRequestSchema } from '../validators/ai';
 
 const router = Router();
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { message, currentCart } = req.body;
+    const parsedRequest = ChatRequestSchema.safeParse(req.body);
 
-    if (!message || typeof message !== 'string') {
+    if (!parsedRequest.success) {
       return res.status(400).json({
-        reply: "Invalid message format.",
+        reply: "I couldn't understand that request. Please try again with a short message.",
         actions: []
       });
     }
 
-    const cartState = Array.isArray(currentCart) ? currentCart : [];
-
-    // Call the AI Service
-    const aiResponse = await parseChatRequest(message, cartState);
+    const aiResponse = await parseChatRequest(
+      parsedRequest.data.message,
+      parsedRequest.data.currentCart
+    );
 
     return res.json(aiResponse);
   } catch (error) {
